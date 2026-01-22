@@ -244,6 +244,6 @@ st.markdown("""
     <div style='text-align: center; margin-top: 50px; color: #888; font-size: 12px;'>
         <hr>
         <p>Developed by <b>Shahed Rahman</b> | Diploma in Engineering Student</p>
-        <p>© 2025 LungsAI Research Project. All rights reserved.</p>
+        <p>© 2026 LungsAI Research Project. All rights reserved.</p>
     </div>
     """, unsafe_allow_html=True)

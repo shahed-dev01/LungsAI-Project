@@ -1,6 +1,8 @@
 streamlit
-tensorflow-cpu
+tensorflow
 numpy
-pillow
-h5py
+Pillow
 fpdf
+opencv-python-headless
+requests
+streamlit-lottie

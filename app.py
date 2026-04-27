@@ -313,10 +313,10 @@ with col_form:
     """, unsafe_allow_html=True)
     
     with st.container(border=True):
-        p_name = st.text_input("Patient Name", placeholder="e.g. John Doe")
+        p_name = st.text_input("Patient Name", placeholder="e.g. Shahed Rahman")
         col_a, col_b = st.columns(2)
         with col_a:
-            p_age = st.number_input("Age", min_value=1, max_value=120, value=30)
+            p_age = st.number_input("Age", min_value=1, max_value=120, value=5)
         with col_b:
             p_gender = st.selectbox("Gender", ["Male", "Female", "Other"])
         p_ref = st.text_input("Reference ID", placeholder="e.g. PID-10293")

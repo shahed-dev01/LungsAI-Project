@@ -3,7 +3,7 @@ import tensorflow as tf
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing import image
 import numpy as np
-from PIL import Image, ImageStat
+from PIL import Image, ImageStat, ImageOps
 from fpdf import FPDF
 import tempfile
 import time
@@ -12,9 +12,7 @@ import cv2
 import requests
 from streamlit_lottie import st_lottie
 
-# ---------------------------------------------------------------------
 # 1. Page Configuration & NATIVE THEME CSS (NO EMOJIS)
-# ---------------------------------------------------------------------
 st.set_page_config(
     page_title="LungsAI – Deep Learning Pneumonia Classifier",
     page_icon="⚕️",
@@ -91,9 +89,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# ---------------------------------------------------------------------
 # 2. LOTTIE ANIMATION LOADER 
-# ---------------------------------------------------------------------
 def load_lottieurl(url: str):
     try:
         r = requests.get(url)
@@ -106,9 +102,7 @@ lottie_medical_scan = load_lottieurl("https://lottie.host/8c823011-37f2-45e3-baf
 lottie_sidebar_pulse = load_lottieurl("https://lottie.host/178229b1-5e8c-4cce-9d41-ed32f2ecb40d/Y79h37233R.json")
 lottie_terms_security = load_lottieurl("https://lottie.host/d27f8a7c-f1d2-4309-8d48-3cddbc96e2cc/B2e8wJ1Yc0.json") 
 
-# ---------------------------------------------------------------------
 # 3. XAI (Grad-CAM) FUNCTIONS
-# ---------------------------------------------------------------------
 def get_img_array(img_path_or_pil, size):
     img = img_path_or_pil.resize(size)
     array = image.img_to_array(img)
@@ -161,9 +155,7 @@ def overlay_heatmap(img_pil, heatmap, alpha=0.4):
     superimposed_img = cv2.addWeighted(heatmap, alpha, img_bgr, 1 - alpha, 0)
     return Image.fromarray(cv2.cvtColor(superimposed_img, cv2.COLOR_BGR2RGB))
 
-# ---------------------------------------------------------------------
 # 4. DYNAMIC REPORT GENERATOR
-# ---------------------------------------------------------------------
 def generate_clinical_logic(raw_score, is_pneumonia):
     signs = []
     if is_pneumonia:
@@ -256,15 +248,17 @@ def create_pdf(patient_data, original_img, heatmap_img, is_pneumonia, confidence
 
 def is_valid_medical_image(pil_img):
     img_hsv = pil_img.convert('HSV')
-    if ImageStat.Stat(img_hsv.split()[1]).mean[0] > 30: return False
+    # Saturation limit increased to 85 to prevent mobile photos from being rejected
+    if ImageStat.Stat(img_hsv.split()[1]).mean[0] > 85: return False
+    
     img_gray = pil_img.convert('L')
     avg_brightness = ImageStat.Stat(img_gray).mean[0]
-    if avg_brightness < 30 or avg_brightness > 210: return False
+    # Brightness limit relaxed for photos taken of screens/lightboxes
+    if avg_brightness < 10 or avg_brightness > 245: return False
+    
     return True
 
-# ---------------------------------------------------------------------
 # 5. Sidebar Layout 
-# ---------------------------------------------------------------------
 with st.sidebar:
     if lottie_sidebar_pulse:
         st_lottie(lottie_sidebar_pulse, height=120, key="sidebar_anim")
@@ -276,13 +270,11 @@ with st.sidebar:
     st.write("---")
     st.write("### Contact Developer")
     st.write("**Name:** Shahed Rahman")
-    st.write("**Email:** shahedrahmanltd@gmail.com")
+    st.write("**Email:** shaheddev@yahoo.com")
     st.write("---")
     st.warning("Research purpose only.")
 
-# ---------------------------------------------------------------------
 # 6. Main App Dashboard 
-# ---------------------------------------------------------------------
 st.markdown("<div class='gradient-text'>LungsAI – Deep Learning Pneumonia Classifier</div>", unsafe_allow_html=True)
 
 col_anim1, col_anim2, col_anim3 = st.columns([1, 2, 1])
@@ -354,9 +346,13 @@ with col_scan:
     if uploaded_file is not None:
         img = Image.open(uploaded_file)
         
+        # --- NEW FIX: Auto-correct mobile photo rotation ---
+        img = ImageOps.exif_transpose(img) 
+        
         if is_valid_medical_image(img):
-            img = img.convert('RGB')
-            st.image(img, caption='Uploaded Scan', width=250)
+            # Auto-grayscale to remove mobile camera color tint
+            img = img.convert('L').convert('RGB')
+            st.image(img, caption='Uploaded Scan (Auto-Corrected)', width=250)
             
             # Clean text button
             if st.button('PROCESS SCAN & GENERATE REPORT', use_container_width=True):
@@ -435,9 +431,7 @@ with col_scan:
         else:
             st.error("Invalid Image Detected: Upload a valid Chest X-Ray.")
 
-# ---------------------------------------------------------------------
 # 7. ANIMATED Terms & Conditions and Footer
-# ---------------------------------------------------------------------
 st.write("---")
 # Clean text for expander
 with st.expander("Terms of Service & Medical Disclaimer (Read carefully)"):
@@ -455,16 +449,5 @@ with st.expander("Terms of Service & Medical Disclaimer (Read carefully)"):
         The results provided by this AI system should **never** be treated as a final medical diagnosis. Always consult a certified doctor or radiologist for official diagnosis. Do not ignore professional medical advice based on this app's results.
         
         ### 3. Accuracy & Liability
-        While the model has a high accuracy rate, errors (False Positives/Negatives) can occur. The developer (**Shahed Rahman**) is not liable for any decisions made based on this software.
-        
-        ### 4. Data Privacy
-        This application processes images temporarily for analysis. No patient data or images are permanently stored on the server.
+        While the model has been trained carefully, AI can make mistakes. The developer assumes no responsibility or liability for any errors, omissions, or consequences arising from the use of this tool.
         """)
-
-st.markdown("""
-    <div style='text-align: center; margin-top: 60px; color: #888; font-size: 12px; font-family: sans-serif;'>
-        <hr style='border: 1px solid #e2e8f0; opacity: 0.2;'>
-        <p>Developed by <b>Shahed Rahman</b> | Diploma in Engineering Student</p>
-        <p>© 2026 LungsAI Research Project. All rights reserved.</p>
-    </div>
-    """, unsafe_allow_html=True)
